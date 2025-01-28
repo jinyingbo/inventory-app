@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>扫码出入库系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #scanner {
+            margin-bottom: 20px;
+        }
+        #article-content {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>扫码出入库系统</h1>
+    <input type="file" accept="image/*" capture="camera" id="scanner">
+    <div id="article-content"></div>
+    <script>
+        document.getElementById('scanner').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = e.target.result;
+                fetch('/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ data })
+                }).then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    alert(data.message); // 显示扫码成功消息
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function loadArticle(articlePath) {
+            fetch(`/articles/${articlePath}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('article-content').innerHTML = data.content;
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // 示例：加载一个文章
+        // loadArticle('path/to/article.md');
+    </script>
+</body>
+</html>
