@@ -2,18 +2,6 @@
 <html>
 <head>
     <title>扫码出入库系统</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        #scanner {
-            margin-bottom: 20px;
-        }
-        #article-content {
-            margin-top: 20px;
-        }
-    </style>
 </head>
 <body>
     <h1>扫码出入库系统</h1>
@@ -25,35 +13,36 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = e.target.result;
-                fetch('/scan', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ data })
-                }).then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    alert(data.message); // 显示扫码成功消息
-                }).catch(error => {
-                    console.error('Error:', error);
-                });
+                // 这里可以添加将扫码数据存储到数据库的逻辑
+                console.log("扫码数据:", data);
             };
             reader.readAsDataURL(file);
         });
 
         function loadArticle(articlePath) {
-            fetch(`/articles/${articlePath}`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('article-content').innerHTML = data.content;
-            }).catch(error => {
-                console.error('Error:', error);
-            });
+            const giteeRepo = 'yourusername/articles'; // 替换为你的Gitee仓库路径
+            const giteeToken = 'your_gitee_token'; // 替换为你的Gitee Token
+            const url = `https://gitee.com/api/v5/repos/${giteeRepo}/contents/${articlePath}`;
+            const headers = new Headers();
+            头。 附加 ( 'Authorization' , " ${ 吉特特姆 } ` ) ;
+             抓住 ( 城市发展中心, {  头 *标题 } )
+                . 然后 ( 响应 => response. Json ( ) )
+                . 然后 ( 数据 => {
+                     如果  ( 数据。 满意的 )  {
+                         康斯特  脱含量 = 阿托布 ( 数据。 满意的 ) ;
+                        document.getElementById('article-content').innerHTML = decodedContent;
+                    } else {
+                        document.getElementById('article-content').innerHTML = '文章未找到';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching article:', error);
+                    document.getElementById('article-content').innerHTML = '加载文章时出错';
+                });
         }
 
         // 示例：加载一个文章
-        // loadArticle('path/to/article.md');
+        loadArticle('path/to/article.md');
     </script>
 </body>
 </html>
