@@ -1,48 +1,442 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>扫码出入库系统</title>
-</head>
-<body>
-    <h1>扫码出入库系统</h1>
-    <input type="file" accept="image/*" capture="camera" id="scanner">
-    <div id="article-content"></div>
-    <script>
-        document.getElementById('scanner').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = e.target.result;
-                // 这里可以添加将扫码数据存储到数据库的逻辑
-                console.log("扫码数据:", data);
-            };
-            reader.readAsDataURL(file);
-        });
-
-        function loadArticle(articlePath) {
-            const giteeRepo = 'https://jinyingbo.github.io/inventory-app/'; // 替换为你的Gitee仓库路径
-            const giteeToken = 'your_gitee_token'; // 替换为你的Gitee Token
-            const url = `https://gitee.com/api/v5/repos/${giteeRepo}/contents/${articlePath}`;
-            const headers = new Headers();
-            头。 附加 ( 'Authorization' , " ${ 吉特特姆 } ` ) ;
-             抓住 ( 城市发展中心, {  头 *标题 } )
-                . 然后 ( 响应 => response. Json ( ) )
-                . 然后 ( 数据 => {
-                     如果  ( 数据。 满意的 )  {
-                         康斯特  脱含量 = 阿托布 ( 数据。 满意的 ) ;
-                        document.getElementById('article-content').innerHTML = decodedContent;
-                    } else {
-                        document.getElementById('article-content').innerHTML = '文章未找到';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching article:', error);
-                    document.getElementById('article-content').innerHTML = '加载文章时出错';
-                });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能扫码管理系统</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --success-color: #4CAF50;
+            --error-color: #f44336;
+            --text-color: #333;
         }
 
-        // 示例：加载一个文章
-        loadArticle('path/to/article.md');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f5f5f7;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 300;
+            font-size: 2.2em;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            max-height: 300px; /* 设置最大高度 */
+            margin: 0 auto 25px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #video {
+            width: 100%;
+            height: auto;
+            transform: scaleX(-1);
+            max-height: 100%; /* 确保视频高度不超过容器 */
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid var(--success-color);
+            border-radius: 8px;
+            box-shadow: 0 0 25px rgba(76, 175, 80, 0.3);
+            animation: pulse 2s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .control-panel {
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.2);
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .primary-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: #1976D2;
+            transform: translateY(-1px);
+        }
+
+        .status-message {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: var(--success-color);
+            border: 1px solid #c8e6c9;
+        }
+
+        .error {
+            background: #ffebee;
+            color: var(--error-color);
+            border: 1px solid #ffcdd2;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+        }
+
+        /* 新增样式：展示数据库中的内容 */
+        .scan-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>智能扫码管理系统</h1>
+        
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <div class="scan-overlay"></div>
+        </div>
+
+        <div class="control-panel">
+            <div class="input-group">
+                <input type="text" 
+                       id="manualInput" 
+                       placeholder="输入编码或扫码..."
+                       autocomplete="off">
+                <button class="primary-btn" id="sendBtn">提交</button>
+            </div>
+            <div class="status-message" id="statusMessage"></div>
+        </div>
+
+        <div class="scan-data">
+            <h2>扫码记录</h2>
+            <div id="dataContainer">
+                <!-- 扫码记录将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        // ========== 配置参数 ==========
+        const config = {
+            apiEndpoint: 'https://jinyingbo.duckdns.org/cgi-bin/scan.php', // 替换为你的域名
+            dataEndpoint: 'https://jinyingbo.duckdns.org/cgi-bin/cgi-bin/data.php',    // 数据获取接口
+            scanInterval: 300,    // 扫码间隔（毫秒）
+            timeout: 10000,       // 请求超时时间
+            maxRetry: 3           // 最大重试次数
+        };
+
+        // ========== DOM元素 ==========
+        const video = document.getElementById('video');
+        const statusMessage = document.getElementById('statusMessage');
+        const manualInput = document.getElementById('manualInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const loading = document.getElementById('loading');
+        const dataContainer = document.getElementById('dataContainer'); // 数据展示容器
+
+        // ========== 状态管理 ==========
+        let isScanning = true;
+        let retryCount = 0;
+
+        // ========== 摄像头初始化 ==========
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                video.srcObject = stream;
+                await video.play();
+                startScanning();
+            } catch (error) {
+                showError(`摄像头访问失败: ${error.message}`);
+            }
+        }
+
+        // ========== 核心扫码逻辑 ==========
+        function processScan() {
+            if (!isScanning) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+                handleScanResult(code.data);
+            }
+        }
+
+        // ========== 扫码结果处理 ==========
+        async function handleScanResult(data) {
+            if (!data.trim()) return;
+            
+            isScanning = false;
+            showLoading();
+            
+            try {
+                const response = await sendData(data);
+                showSuccess(`扫码成功: ${data}<br>服务器响应: ${response.message}`);
+                await fetchData(); // 刷新展示数据
+                setTimeout(() => {
+                    isScanning = true;
+                }, 2000);
+            } catch (error) {
+                showError(error.message);
+                if (retryCount < config.maxRetry) {
+                    retryCount++;
+                    setTimeout(() => {
+                        isScanning = true;
+                    }, 1000);
+                } else {
+                    showError('扫码失败，请手动输入');
+                    manualInput.focus();
+                }
+            } finally {
+                hideLoading();
+                retryCount = 0;
+            }
+        }
+
+        // ========== 数据发送 ==========
+        async function sendData(data) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+
+            try {
+                const response = await fetch(config.apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`服务器错误: ${response.status} - ${errorText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('请求超时，请检查网络连接');
+                }
+                throw error;
+            }
+        }
+
+        // ========== 手动提交处理 ==========
+        function handleManualSubmit() {
+            const data = manualInput.value.trim();
+            if (!data) {
+                showError('请输入有效内容');
+                return;
+            }
+
+            showLoading();
+            manualInput.value = '';
+            
+            sendData(data)
+                .then(response => {
+                    showuccess （`提交成功：$ { data } <br>服务器响应：$ { revestion。message } ` ） ;
+                    fetchData(); // 刷新展示数据
+                })
+                .catch(error => {
+                    showError(`提交失败: ${error.message}`);
+                })
+                .finally(hideLoading);
+        }
+
+        // ========== UI控制 ==========
+        function showLoading() {
+            loading.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        function showMessage(text, type = 'success') {
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.innerHTML = text;
+            statusMessage.style.display = 'block';
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        function showSuccess(text) {
+            showMessage(text, 'success');
+        }
+
+        function showError(text) {
+            showMessage(text, 'error');
+        }
+
+        // ========== 事件监听 ==========
+        sendBtn.addEventListener('click', handleManualSubmit);
+        manualInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleManualSubmit();
+        });
+
+        // ========== 启动程序 ==========
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            initCamera();
+            setInterval(processScan, config.scanInterval);
+        } else {
+            showError('当前浏览器不支持摄像头访问');
+        }
+
+        // ========== 数据展示 ==========
+        async function fetchData() {
+            try {
+                const response = await fetch(config.dataEndpoint);
+                const data = await response.json();
+                displayData(data.data);
+            } catch (error) {
+                安慰。错误（'错误：'，错误） ;
+            }
+        }
+
+        功能 displayData （data ） {
+            DataContainer。innerhtml = '' ;
+            数据。foreach （item => {
+                const  div =文档。createElement （'div' ） ;
+                div。className = 'scan-item' ;
+                div。Innerhtml = `
+                    <p>数据: ${item.data}</p>
+                    <p>IP 地址: ${item.client_ip}</p>
+                    <p>用户代理: ${item.user_agent}</p>
+                    <p>时间: ${item.timestamp}</p>
+                `;
+                dataContainer.appendChild(div);
+            });
+        }
+
+        // 初始化数据展示
+        fetchData();
     </script>
 </body>
-</html>
+</ html >
